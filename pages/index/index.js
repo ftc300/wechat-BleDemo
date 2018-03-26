@@ -11,10 +11,7 @@ Page({
     initSuccess: true, //初始化是否成功
   },
   onLoad: function () {
-    
     this.initBle()
-
-    console.log(this.getServiceId())
   },
 
   //初始化蓝牙

@@ -113,7 +113,7 @@ Page({
           
           wx.getBLEDeviceCharacteristics({
             deviceId: device.deviceId,
-            serviceId: that.getServiceId(),
+            serviceId: that.getInshowServiceId(),
             success: function(res){
               console.log('特征',res)
 
@@ -124,14 +124,28 @@ Page({
                 // callback
                 console.log('value change', res)
                 const hex = that.buf2hex(res.value)
-                console.log('返回的数据：', hex)
-                that.addData({dataType:"接收",content:hex})
+                const hexArr = that.hex2IntArr(hex)
+                console.log('步数：', that.getCurrentStep(hexArr))
+                that.addData({ dataType: "步数", content: that.getCurrentStep(hexArr)})
+                
+              })
+
+              wx.readBLECharacteristicValue({
+                deviceId: device.deviceId,
+                serviceId: that.getInshowServiceId(),
+                characteristicId: that.getInshowNotifyCharacterId(),
+                success: function (res) {
+                  console.log('readBLECharacteristicValue:', res)
+                },
+                fail: function (res) {
+                  console.log('readBLECharacteristicValue fail:', res)
+                }
               })
 
               wx.notifyBLECharacteristicValueChanged({
                 deviceId: device.deviceId,
-                serviceId: that.getServiceId(),
-                characteristicId: that.getReceiveId(),
+                serviceId: that.getInshowServiceId(),
+                characteristicId: that.getInshowNotifyCharacterId(),
                 state: true,
                 success: function(res){
                   // success
@@ -252,5 +266,63 @@ Page({
     else {
       return this.data.receiveId
     }
+  },
+
+
+  getInshowServiceId:function(){
+    var platform = app.globalData.platform
+    //ios 平台 服务id 中字母必须为大写
+    if (platform == "ios") {
+      return "C99A3001-7F3C-4E85-BDE2-92F2037BFD42";
+    }
+    //android 平台 服务id 中字母必须为小写
+    else if (platform == "android") {
+      return "c99a3001-7f3c-4e85-bde2-92f2037bfd42";
+    }
+    else {
+      return "c99a3001-7f3c-4e85-bde2-92f2037bfd42";
+    }
+  },
+
+  getInshowNotifyCharacterId:function(){
+    var platform = app.globalData.platform
+
+    //ios 平台 服务id 中字母必须为大写
+    if (platform == "ios") {
+      return "C99A3101-7F3C-4E85-BDE2-92F2037BFD42";
+    }
+    //android 平台 服务id 中字母必须为小写
+    else if (platform == "android") {
+      return "c99a3101-7f3c-4e85-bde2-92f2037bfd42";
+    }
+    else {
+      return this.data.receiveId
+    }
+  },
+  /**
+ * 16进制转化为10进制，之后还需移位处理
+ * @param {*起始下标} first
+ * @param {*结束下标} end
+ */
+  hex2IntArr:function (hex) {
+      var pos = 0;
+      var len = hex.length;
+      if (len % 2 != 0) {
+        return null;
+      }
+      len /= 2;
+      var hexArr = new Array();
+      for (var i = 0; i < len; i++) {
+        var s = hex.substr(pos, 2);
+        var v = parseInt(s, 16);
+        hexArr.push(v);
+        pos += 2;
+      }
+      return hexArr;
+  },
+
+  getCurrentStep: function getCurrentStep (hexArr){
+    return ((hexArr[0] & 0xFF) | ((hexArr[1] & 0xFF) << 8) | ((hexArr[2] & 0xFF) << 16) | ((hexArr[3] & 0xFF) << 24));
   }
+
 })
